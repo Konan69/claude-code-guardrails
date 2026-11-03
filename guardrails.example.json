@@ -1,0 +1,79 @@
+{
+  "_help": "Python 3.11+. Loaded at startup. Set GUARDRAILS_CONFIG to another complete JSON policy file. Paths accept ~ and environment variables. Example names are placeholders; replace them with your own.",
+  "rules": {
+    "allowed_models": [
+      "claude-opus-5-5",
+      "gpt-6.1-sol",
+      "gpt-6-luna",
+      "gpt-6-astra"
+    ],
+    "bad_effort": [
+      "xhigh",
+      "max",
+      "ultra",
+      "ultracode",
+      "ultrathink"
+    ],
+    "codex_efforts": [
+      "low",
+      "medium"
+    ],
+    "claude_models": [
+      "claude-opus-5-5"
+    ],
+    "codex_service_tiers": [
+      "priority",
+      "fast"
+    ],
+    "default_service_tier": "priority",
+    "thread_tools": [
+      "t3_thread_launch",
+      "create_threads",
+      "t3_thread_fork",
+      "t3_project_create"
+    ],
+    "thread_marker": "~/.claude/state/operator-asked-thread",
+    "thread_marker_seconds": 900,
+    "protected_branches": [
+      "main",
+      "master",
+      "HEAD"
+    ]
+  },
+  "reply": {
+    "max_lines": 6,
+    "max_chars": 700,
+    "reminder": "reply rule: The operator reads this reply. Answer in 1 to 5 lines, result first. No recap, no step narration, no list of what you checked. Detail goes in a file or a T3 rendered page (html_render) with one line pointing to it. A Stop hook rejects a final reply over {max_lines} lines or {max_chars} characters. Briefs and messages you write to agents are not covered: make those as detailed as they need.",
+    "blocked": "Your reply was {lines} lines and {chars} characters. The limit is {max_lines} lines and {max_chars} characters. Send the reply again in 1 to 5 lines: the result first, then only what the operator must decide or do. Put the detail in a file or, inside T3, a rendered page (html_preview, then html_render) and point to it in one line. Do not apologise or mention this check. If the operator asked for the long text itself in this turn, write it to a file and give the path."
+  },
+  "guarding": {
+    "shared_checkout": "~/agency",
+    "credential_stores": [
+      ".codex/auth.json",
+      ".codex_work/auth.json",
+      ".claude/.credentials.json",
+      ".config/gh/hosts.yml",
+      ".pi/agent/auth.json"
+    ],
+    "protected_hosts": [
+      "production-host"
+    ],
+    "protected_proxy_pattern": "\\bboat proxy project-b\\b",
+    "credential_reason": "Credentials never enter model context. Use the owning tool's authenticated interface.",
+    "commit_reason": "Shared index: require git commit -- <paths> for ordinary commits under ~/agency/. Positional paths also work. Name only your paths; -a/--all is refused. During an active operation, pathless commits, git merge --continue and git cherry-pick --continue are allowed.",
+    "host_reason": "Production server refused by resolved SSH configuration. Use an allowed CI host."
+  },
+  "router": {
+    "never_route": [
+      "docs",
+      "humanizer",
+      "skill-creator"
+    ]
+  },
+  "verdict": {
+    "ledger": "~/.claude/verdicts.tsv",
+    "status_repositories": [],
+    "github_user": "",
+    "github_users_by_prefix": {}
+  }
+}

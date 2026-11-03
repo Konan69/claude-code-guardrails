@@ -1,0 +1,1 @@
+mutation { mergePullRequest(input: {pullRequestId: "x"}) { clientMutationId } }

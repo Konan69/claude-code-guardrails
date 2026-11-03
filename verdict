@@ -1,0 +1,113 @@
+#!/usr/bin/env python3
+"""Gate verdict ledger: one row per reviewed head commit.
+
+  verdict add <owner/repo> <pr> <sha> <author-family> <reviewer> <APPROVE|CHANGES> <evidence>
+  verdict check <owner/repo> <pr>     exit 0 only if the PR's current head has a cross-family APPROVE
+  verdict list [owner/repo]
+
+Rows live in the configured ledger. On configured repositories `add` also posts a
+commit status `gate/cross-family` on the sha, so GitHub shows the verdict.
+"""
+import datetime, json, os, subprocess, sys
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "hooks"))
+from policy import CONFIG, path
+POLICY = CONFIG["verdict"]
+
+LEDGER = path(POLICY["ledger"])
+COLS = ["time", "repo", "pr", "sha", "author_family", "reviewer_family", "reviewer", "verdict", "evidence"]
+OWN = tuple(POLICY["status_repositories"])
+
+
+FAMILIES = {"claude": "claude", "opus": "claude", "anthropic": "claude",
+            "gpt": "gpt", "sol": "gpt", "luna": "gpt", "codex": "gpt", "openai": "gpt",
+            "grok": "grok", "glm": "glm", "deepseek": "deepseek"}
+
+
+def family(model):
+    m = model.lower()
+    for k, f in FAMILIES.items():
+        if k in m:
+            return f
+    sys.exit(f"verdict: unknown model family for {model!r}; use a full model id like claude-opus-5-5 or gpt-6.1-sol")
+
+
+def gh(args, repo):
+    env = dict(os.environ)
+    user = next((user for prefix, user in POLICY["github_users_by_prefix"].items() if repo.startswith(prefix)),
+                POLICY["github_user"])
+    if user:
+        tok = subprocess.run(["gh", "auth", "token", "-u", user], capture_output=True, text=True, timeout=10)
+        if tok.returncode == 0:
+            env["GH_TOKEN"] = tok.stdout.strip()
+    return subprocess.run(["gh", *args], capture_output=True, text=True, env=env, timeout=20)
+
+
+def rows():
+    if not os.path.exists(LEDGER):
+        return []
+    with open(LEDGER) as f:
+        lines = f.read().splitlines()
+    return [dict(zip(COLS, l.split("\t"))) for l in lines[1:] if l.strip()]
+
+
+def head_sha(repo, pr):
+    r = gh(["pr", "view", str(pr), "-R", repo, "--json", "headRefOid", "-q", ".headRefOid"], repo)
+    if r.returncode != 0:
+        sys.exit(f"verdict: cannot read {repo}#{pr}: {r.stderr.strip()}")
+    return r.stdout.strip()
+
+
+def add(repo, pr, sha, author, reviewer, verdict, evidence):
+    verdict = verdict.upper()
+    if verdict not in ("APPROVE", "CHANGES"):
+        sys.exit("verdict: verdict is APPROVE or CHANGES")
+    if len(sha) < 40:
+        sys.exit("verdict: give the full 40-char head sha")
+    a, r = family(author), family(reviewer)
+    new = not os.path.exists(LEDGER)
+    with open(LEDGER, "a") as f:
+        if new:
+            f.write("\t".join(COLS) + "\n")
+        now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        f.write("\t".join([now, repo, str(pr), sha, a, r, reviewer, verdict, evidence.replace("\t", " ")]) + "\n")
+    if repo.startswith(OWN):
+        state = "success" if verdict == "APPROVE" and a != r else "failure"
+        desc = f"{verdict} by {reviewer} ({r}) on {a}-written code"[:140]
+        s = gh(["api", f"repos/{repo}/statuses/{sha}", "-f", f"state={state}",
+                "-f", "context=gate/cross-family", "-f", f"description={desc}"], repo)
+        print("status posted" if s.returncode == 0 else f"status not posted: {s.stderr.strip()}")
+    if a == r:
+        print(f"warning: reviewer family {r} equals author family; this row does not satisfy the gate")
+
+
+def check(repo, pr):
+    sha = head_sha(repo, pr)
+    hits = [x for x in rows() if x["repo"] == repo and x["sha"] == sha]
+    last = hits[-1] if hits else None
+    if last and last["verdict"] == "APPROVE" and last["author_family"] != last["reviewer_family"]:
+        print(f"ok {repo}#{pr} {sha} APPROVE by {last['reviewer']}")
+        return 0
+    why = f"latest row is {last['verdict']} by {last['reviewer']}" if last else "no verdict row"
+    print(f"blocked {repo}#{pr} head {sha[:8]}: {why}. Run a cross-family gate review on this exact sha, "
+          f"then `verdict add {repo} {pr} {sha} <author-model> <reviewer-model> APPROVE <evidence-path>`.")
+    return 1
+
+
+def main(argv):
+    if not argv or argv[0] in ("-h", "--help"):
+        print(__doc__); return 0
+    cmd, rest = argv[0], argv[1:]
+    if cmd == "add" and len(rest) == 7:
+        add(*rest); return 0
+    if cmd == "check" and len(rest) == 2:
+        return check(*rest)
+    if cmd == "list":
+        for x in rows():
+            if not rest or x["repo"] == rest[0]:
+                print(f"{x['time']} {x['repo']}#{x['pr']} {x['sha'][:8]} {x['author_family']}->{x['reviewer_family']} {x['verdict']} {x['evidence']}")
+        return 0
+    print(__doc__); return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

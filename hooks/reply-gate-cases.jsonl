@@ -1,0 +1,8 @@
+{"want":"pass","text":"Mockup 3 is above, with the recap table at the top, and below it what went wrong in your Example Thread. I haven't coded anything.\n\nThe worst problem is our bug, not Example's: `find_tools` failed on all 8 calls.\n\nMark each \"proposed\" row in the table as yes or no. Fixing `find_tools` and the four behaviour rules doesn't wait on the design, so I'll start on those as soon as you agree."}
+{"want":"pass","text":"Fix is on branch fix/tools, gate green. Push and merge once it's green?"}
+{"want":"pass","text":"Found the leak in the cache layer. Say go and I'll patch it."}
+{"want":"pass","text":"Three options for the schema: A) flat table, B) JSON column, C) separate table. Tell me which you want for each of the five entities."}
+{"want":"pass","text":"Fixed `find_tools` (sha abc1234); 8/8 calls now return tool shapes. Open: none."}
+{"want":"pass","text":"Merged (abc1234). Prod deploy is the next step; that one needs your go since it hits customers."}
+{"want":"pass","text":"Marked the 6 proposed rows myself: 4 yes, 2 no (reasons in the page). Started on find_tools; PR #412 open."}
+{"want":"pass","text":"Your earlier fix had a gap, now patched. The Example thread will hit the block on its next reply."}
