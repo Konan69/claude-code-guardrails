@@ -1,0 +1,106 @@
+{
+  "repo": "claude-code-guardrails",
+  "accent": "#7CF2C4",
+  "hero": {
+    "command": "python3 hooks/guarding.py < docs/media/calls/read-credentials.json | jq -r '.[][]'",
+    "output": [
+      {
+        "text": "PreToolUse",
+        "style": "muted"
+      },
+      {
+        "text": "deny",
+        "style": "accent"
+      },
+      {
+        "text": "Credentials never enter model context. Use the owning tool's authenticated interface."
+      }
+    ],
+    "value": "The agent asked to read ~/.codex/auth.json. The hook said no."
+  },
+  "diagram": {
+    "direction": "TB",
+    "nodes": [
+      {
+        "id": "cc",
+        "label": "Claude Code",
+        "sublabel": "settings.json hooks"
+      },
+      {
+        "id": "router",
+        "label": "skill-router.py",
+        "sublabel": "UserPromptSubmit"
+      },
+      {
+        "id": "guarding",
+        "label": "guarding.py",
+        "sublabel": "PreToolUse Bash|Read"
+      },
+      {
+        "id": "rules",
+        "label": "rules-guard.py",
+        "sublabel": "PreToolUse Bash|T3"
+      },
+      {
+        "id": "reply",
+        "label": "short-reply.py",
+        "sublabel": "Stop"
+      },
+      {
+        "id": "gate",
+        "label": "skill-gate.py",
+        "sublabel": "PreToolUse *"
+      },
+      {
+        "id": "out",
+        "label": "allow or deny",
+        "sublabel": "hook JSON on stdout"
+      }
+    ],
+    "edges": [
+      {
+        "from": "cc",
+        "to": "router",
+        "label": "prompt"
+      },
+      {
+        "from": "cc",
+        "to": "guarding"
+      },
+      {
+        "from": "cc",
+        "to": "rules"
+      },
+      {
+        "from": "cc",
+        "to": "reply"
+      },
+      {
+        "from": "router",
+        "to": "gate",
+        "label": "skill-pending"
+      },
+      {
+        "from": "gate",
+        "to": "out"
+      },
+      {
+        "from": "guarding",
+        "to": "out"
+      },
+      {
+        "from": "rules",
+        "to": "out"
+      },
+      {
+        "from": "reply",
+        "to": "out"
+      }
+    ],
+    "primary": [
+      "cc",
+      "guarding",
+      "out"
+    ]
+  }
+}
