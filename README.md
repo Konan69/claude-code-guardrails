@@ -1,6 +1,6 @@
 # claude-code-guardrails
 
-*A bouncer, a librarian and an editor standing between Claude and your machine.*
+Hooks that stop Claude Code from doing the things you keep telling it not to.
 
 Claude Code hooks that refuse risky tool calls, hold work until the right skills are loaded, and cap the length of replies a person reads.
 
