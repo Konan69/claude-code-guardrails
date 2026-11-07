@@ -1,5 +1,7 @@
 # claude-code-guardrails
 
+*A bouncer, a librarian and an editor standing between Claude and your machine.*
+
 Claude Code hooks that refuse risky tool calls, hold work until the right skills are loaded, and cap the length of replies a person reads.
 
 ![A terminal pipes a Claude Code Read call for ~/.codex/auth.json into guarding.py, and the hook answers deny with its reason](docs/media/hero.gif)
