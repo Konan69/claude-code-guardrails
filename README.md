@@ -4,7 +4,7 @@ Hooks that stop Claude Code from doing the things you keep telling it not to.
 
 A rule in `CLAUDE.md` is a request the model forgets late in a long session. A hook runs before every tool call, so the rule holds: no push to `main`, no credential file in context, no SSH to production, no merge that is not bound to the reviewed head commit, no reply over 6 lines, no edit before the matching skills are loaded. Each refusal says what to do instead, so the agent retries the right way in the same turn.
 
-![A terminal pipes a Claude Code Read call for ~/.codex/auth.json into guarding.py, and the hook answers deny with its reason](docs/media/hero.gif)
+![Explainer: five proposed actions meet the hooks. guarding.py denies reading ~/.codex/auth.json, rules-guard.py denies git push origin main and allows the retry on feat/login, guarding.py denies ssh production-host, and short-reply.py blocks a 9-line reply, each with the hook's real reason](docs/media/hero.gif)
 
 ## Install
 
